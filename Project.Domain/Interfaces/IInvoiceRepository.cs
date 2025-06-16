@@ -15,5 +15,14 @@ namespace Project.Domain.Interfaces
         Task UpdateAsync(Invoice invoice);
         Task DeleteAsync(int id);
         Task<int> CountAsync(string searchTerm = null);
+
+        // Métodos para detalle de factura (detalle)
+        Task<IEnumerable<InvoiceDetail>> GetInvoiceDetailsAsync(int invoiceId);
+        Task<InvoiceDetail> GetInvoiceDetailAsync(int invoiceId, int productId);
+
+        // Lógica de ventas (maestro-detalle)
+        Task AddProductToInvoiceAsync(int invoiceId, int productId, int quantity);
+        Task RemoveProductFromInvoiceAsync(int invoiceId, int productId);
+        Task<bool> ProductExistsInInvoiceAsync(int invoiceId, int productId);
     }
 }

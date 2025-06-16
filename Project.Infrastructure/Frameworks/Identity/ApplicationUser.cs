@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Identity;
 
 namespace Project.Infrastructure.Frameworks.Identity
 {
-    public class ApplicationUser : IdentityUser<string>
+    public class ApplicationUser : IdentityUser
     {
         public string Identification { get; set; } // Cedula
         public bool IsBlocked { get; set; }

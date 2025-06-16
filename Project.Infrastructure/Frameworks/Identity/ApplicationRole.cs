@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Identity;
 
 namespace Project.Infrastructure.Frameworks.Identity
 {
-    public class ApplicationRole : IdentityRole<string>
+    public class ApplicationRole : IdentityRole
     {
         public string Description { get; set; } 
         public bool IsActive { get; set; } = true;
