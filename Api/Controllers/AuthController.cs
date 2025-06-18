@@ -14,11 +14,13 @@ namespace Api.Controllers
     [Route("api/[controller]")]
     public class AuthController : ControllerBase
     {
+        private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly IConfiguration _configuration;
 
-        public AuthController(UserManager<ApplicationUser> userManager, IConfiguration configuration)
+        public AuthController(SignInManager<ApplicationUser> signInManager, UserManager<ApplicationUser> userManager, IConfiguration configuration)
         {
+            _signInManager = signInManager;
             _userManager = userManager;
             _configuration = configuration;
         }
@@ -27,7 +29,18 @@ namespace Api.Controllers
         public async Task<IActionResult> Login([FromBody] LoginDto loginDto)
         {
             var user = await _userManager.FindByEmailAsync(loginDto.Email);
-            if (user == null || !await _userManager.CheckPasswordAsync(user, loginDto.Password))
+            if (user == null)
+                return Unauthorized("Invalid credentials.");
+
+            // Aquí se activa el control de bloqueos
+            var result = await _signInManager.PasswordSignInAsync(
+                user.UserName, loginDto.Password, false, lockoutOnFailure: true
+            );
+
+            if (result.IsLockedOut)
+                return Unauthorized("La cuenta está bloqueada por demasiados intentos fallidos. Intente más tarde.");
+
+            if (!result.Succeeded)
                 return Unauthorized("Invalid credentials.");
 
             // Get user roles

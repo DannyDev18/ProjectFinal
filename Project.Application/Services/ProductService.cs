@@ -15,34 +15,51 @@ namespace Project.Application.Services
 
         public ProductService(IProductRepository productRepository)
         {
-            _productRepository = productRepository;
+            _productRepository = productRepository ?? throw new ArgumentNullException(nameof(productRepository));
         }
 
         public async Task<ProductDto> GetByIdAsync(int id)
         {
+            if (id <= 0) throw new ArgumentException("Product ID must be greater than zero.", nameof(id));
+
             var product = await _productRepository.GetByIdAsync(id);
-            return product == null ? null : ToProductDto(product);
+            return product != null ? ToProductDto(product) : null;
         }
 
         public async Task<ProductDto> GetByCodeAsync(string code)
         {
-            var product = await _productRepository.GetByCodeAsync(code);
-            return product == null ? null : ToProductDto(product);
+            if (string.IsNullOrWhiteSpace(code)) throw new ArgumentException("Product code is required.", nameof(code));
+
+            var product = await _productRepository.GetByCodeAsync(code.Trim());
+            return product != null ? ToProductDto(product) : null;
         }
 
         public async Task<IEnumerable<ProductDto>> GetAllAsync(int pageNumber, int pageSize, string searchTerm = null)
         {
-            var products = await _productRepository.GetAllAsync(pageNumber, pageSize, searchTerm);
-            return products.Select(p => ToProductDto(p));
+            if (pageNumber <= 0) throw new ArgumentException("Page number must be greater than zero.", nameof(pageNumber));
+            if (pageSize <= 0) throw new ArgumentException("Page size must be greater than zero.", nameof(pageSize));
+
+            var products = await _productRepository.GetAllAsync(pageNumber, pageSize, searchTerm?.Trim());
+            return products?.Select(ToProductDto) ?? Enumerable.Empty<ProductDto>();
         }
 
         public async Task AddAsync(ProductCreateDto productDto)
         {
+            if (productDto == null) throw new ArgumentNullException(nameof(productDto));
+            if (string.IsNullOrWhiteSpace(productDto.Code)) throw new ArgumentException("Product code is required.", nameof(productDto.Code));
+            if (string.IsNullOrWhiteSpace(productDto.Name)) throw new ArgumentException("Product name is required.", nameof(productDto.Name));
+            if (productDto.Price < 0) throw new ArgumentException("Price cannot be negative.", nameof(productDto.Price));
+            if (productDto.Stock < 0) throw new ArgumentException("Stock cannot be negative.", nameof(productDto.Stock));
+
+            // Check uniqueness
+            if (await _productRepository.ExistsAsync(productDto.Code.Trim()))
+                throw new InvalidOperationException("A product with this code already exists.");
+
             var product = new Product
             {
-                Code = productDto.Code,
-                Name = productDto.Name,
-                Description = productDto.Description,
+                Code = productDto.Code.Trim(),
+                Name = productDto.Name.Trim(),
+                Description = productDto.Description?.Trim(),
                 Price = productDto.Price,
                 Stock = productDto.Stock,
                 IsActive = true
@@ -52,48 +69,76 @@ namespace Project.Application.Services
 
         public async Task UpdateAsync(ProductUpdateDto productDto)
         {
-            var product = new Product
+            if (productDto == null) throw new ArgumentNullException(nameof(productDto));
+            if (productDto.ProductId <= 0) throw new ArgumentException("Product ID must be greater than zero.", nameof(productDto.ProductId));
+            if (string.IsNullOrWhiteSpace(productDto.Code)) throw new ArgumentException("Product code is required.", nameof(productDto.Code));
+            if (string.IsNullOrWhiteSpace(productDto.Name)) throw new ArgumentException("Product name is required.", nameof(productDto.Name));
+            if (productDto.Price < 0) throw new ArgumentException("Price cannot be negative.", nameof(productDto.Price));
+            if (productDto.Stock < 0) throw new ArgumentException("Stock cannot be negative.", nameof(productDto.Stock));
+
+            var existingProduct = await _productRepository.GetByIdAsync(productDto.ProductId);
+            if (existingProduct == null)
+                throw new InvalidOperationException("Product does not exist.");
+
+            // If code is changed, check uniqueness
+            if (!string.Equals(existingProduct.Code, productDto.Code, StringComparison.OrdinalIgnoreCase))
             {
-                ProductId = productDto.ProductId,
-                Code = productDto.Code,
-                Name = productDto.Name,
-                Description = productDto.Description,
-                Price = productDto.Price,
-                Stock = productDto.Stock,
-                IsActive = productDto.IsActive
-            };
-            await _productRepository.UpdateAsync(product);
+                if (await _productRepository.ExistsAsync(productDto.Code.Trim()))
+                    throw new InvalidOperationException("A product with this code already exists.");
+            }
+
+            existingProduct.Code = productDto.Code.Trim();
+            existingProduct.Name = productDto.Name.Trim();
+            existingProduct.Description = productDto.Description?.Trim();
+            existingProduct.Price = productDto.Price;
+            existingProduct.Stock = productDto.Stock;
+            existingProduct.IsActive = productDto.IsActive;
+
+            await _productRepository.UpdateAsync(existingProduct);
         }
 
-        public Task DeleteAsync(int id)
+        public async Task DeleteAsync(int id)
         {
-            return _productRepository.DeleteAsync(id);
+            if (id <= 0) throw new ArgumentException("Product ID must be greater than zero.", nameof(id));
+
+            var product = await _productRepository.GetByIdAsync(id);
+            if (product == null)
+                throw new InvalidOperationException("Product does not exist.");
+
+            await _productRepository.DeleteAsync(id);
         }
 
         public Task<bool> ExistsAsync(string code)
         {
-            return _productRepository.ExistsAsync(code);
+            if (string.IsNullOrWhiteSpace(code)) throw new ArgumentException("Product code is required.", nameof(code));
+            return _productRepository.ExistsAsync(code.Trim());
         }
 
         public Task<int> CountAsync(string searchTerm = null)
         {
-            return _productRepository.CountAsync(searchTerm);
+            return _productRepository.CountAsync(searchTerm?.Trim());
         }
 
         public async Task<IEnumerable<ProductDto>> GetAvailableProductsAsync(int pageNumber, int pageSize, string searchTerm = null)
         {
-            var products = await _productRepository.GetAvailableProductsAsync(pageNumber, pageSize, searchTerm);
-            return products.Select(p => ToProductDto(p));
+            if (pageNumber <= 0) throw new ArgumentException("Page number must be greater than zero.", nameof(pageNumber));
+            if (pageSize <= 0) throw new ArgumentException("Page size must be greater than zero.", nameof(pageSize));
+
+            var products = await _productRepository.GetAvailableProductsAsync(pageNumber, pageSize, searchTerm?.Trim());
+            return products?.Select(ToProductDto) ?? Enumerable.Empty<ProductDto>();
         }
 
         public Task<bool> HasStockAsync(int productId, int quantity)
         {
+            if (productId <= 0) throw new ArgumentException("Product ID must be greater than zero.", nameof(productId));
+            if (quantity <= 0) throw new ArgumentException("Quantity must be greater than zero.", nameof(quantity));
             return _productRepository.HasStockAsync(productId, quantity);
         }
 
-        // Métodos de mapeo manual entre Product y ProductDto
+        // Mapping method
         private ProductDto ToProductDto(Product product)
         {
+            if (product == null) return null;
             return new ProductDto
             {
                 ProductId = product.ProductId,
@@ -101,8 +146,8 @@ namespace Project.Application.Services
                 Name = product.Name,
                 Description = product.Description,
                 Price = product.Price,
-                Stock = product.Stock
-               
+                Stock = product.Stock,
+                IsActive = product.IsActive
             };
         }
     }

@@ -32,7 +32,7 @@ namespace Project.Infrastructure.Repositories
         {
             var query = _context.Clients.AsQueryable();
             if (!string.IsNullOrWhiteSpace(searchTerm))
-                query = query.Where(c => c.FirstName.Contains(searchTerm) || c.IdentificationNumber.Contains(searchTerm));
+                query = query.Where(c => c.FirstName.Contains(searchTerm) || c.IdentificationNumber.Contains(searchTerm) || c.LastName.Contains(searchTerm));
             return await query
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)

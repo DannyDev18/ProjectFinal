@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Project.Application.Dtos;
 using Project.Application.Services;
 using Project.Domain.Entities;
@@ -25,6 +26,7 @@ namespace Api.Controllers
         }
 
         [HttpGet]
+     
         public async Task<IActionResult> GetAll(int pageNumber = 1, int pageSize = 10, string? searchTerm = null)
         {
             var clients = await _clientService.GetAllAsync(pageNumber, pageSize, searchTerm);

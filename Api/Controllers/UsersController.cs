@@ -156,7 +156,7 @@ namespace Api.Controllers
 
             user.LockoutEnd = null;
             await _userManager.UpdateAsync(user);
-
+            await _userManager.ResetAccessFailedCountAsync(user);
             return NoContent();
         }
 
@@ -173,6 +173,7 @@ namespace Api.Controllers
             {
                 Id = user.Id,
                 UserName = user.UserName,
+                IdentificationNumber = user.Identification,
                 Email = user.Email,
                 EmailConfirmed = user.EmailConfirmed,
                 Roles = await _userManager.GetRolesAsync(user),

@@ -31,22 +31,37 @@ namespace Project.API.Controllers
             var invoices = await _invoiceService.GetAllAsync(pageNumber, pageSize, searchTerm);
             return Ok(invoices);
         }
-
+        
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] InvoiceCreateDto invoiceDto)
         {
+            // Validación: No crear factura sin detalles
+            if (invoiceDto?.InvoiceDetails == null || !invoiceDto.InvoiceDetails.Any())
+            {
+                return BadRequest("La factura debe contener al menos un detalle.");
+            }
+
             await _invoiceService.AddAsync(invoiceDto);
-            // Idealmente, deberías retornar el ID generado o el objeto completo
+
+            // Opcional: Retornar el ID creado o el objeto completo
+            //return CreatedAtAction(nameof(GetById), new { id = generadoId }, invoiceDto);
             return StatusCode(201);
         }
 
-        [HttpPut("{id}")]
-        public async Task<IActionResult> Update(int id, [FromBody] InvoiceUpdateDto invoiceDto)
-        {
-            if (id != invoiceDto.InvoiceId) return BadRequest();
-            await _invoiceService.UpdateAsync(invoiceDto);
-            return NoContent();
-        }
+            [HttpPut("{id}")]
+            public async Task<IActionResult> Update(int id, [FromBody] InvoiceUpdateDto invoiceDto)
+            {
+                if (id != invoiceDto.InvoiceId) return BadRequest("El ID de la URL no coincide con el de la factura.");
+
+                // Validación: No actualizar factura sin detalles
+                if (invoiceDto?.InvoiceDetails == null || !invoiceDto.InvoiceDetails.Any())
+                {
+                    return BadRequest("La factura debe contener al menos un detalle.");
+                }
+
+                await _invoiceService.UpdateAsync(invoiceDto);
+                return NoContent();
+            }
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
@@ -66,6 +81,11 @@ namespace Project.API.Controllers
         [HttpPost("{invoiceId}/add-product")]
         public async Task<IActionResult> AddProduct(int invoiceId, [FromBody] InvoiceDetailCreateDto detailDto)
         {
+            if (detailDto == null || detailDto.ProductId <= 0 || detailDto.Quantity <= 0)
+            {
+                return BadRequest("Datos de producto inválidos.");
+            }
+
             await _invoiceService.AddProductToInvoiceAsync(invoiceId, detailDto.ProductId, detailDto.Quantity);
             return NoContent();
         }

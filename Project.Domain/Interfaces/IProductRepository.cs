@@ -16,6 +16,7 @@ namespace Project.Domain.Interfaces
         Task AddAsync(Product product);
         Task UpdateAsync(Product product);
         Task DeleteAsync(int id);
+        Task<bool> ExistsByIdAsync(int id);
         Task<bool> ExistsAsync(string code);
         Task<int> CountAsync(string searchTerm = null);
 
