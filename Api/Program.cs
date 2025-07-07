@@ -41,7 +41,7 @@ namespace Api
 
             // JWT Configuration
             var jwtSettings = builder.Configuration.GetSection("Jwt");
-            var key = Encoding.UTF8.GetBytes(jwtSettings["Key"] ?? "YourSuperSecretKey1234!");
+            var key = Encoding.UTF8.GetBytes(jwtSettings["Key"] ?? "F2C7#9z8l8$4b6@e5!r2v7w1q3x6n4u3p0s9d7");
 
             builder.Services.AddAuthentication(options =>
             {
@@ -62,7 +62,7 @@ namespace Api
                     ClockSkew = TimeSpan.Zero
                 };
             });
-            builder.WebHost.UseUrls("https://0.0.0.0:44306", "http://0.0.0.0:44305");
+            
             // App services
             builder.Services.AddScoped<IClientRepository, ClientRepository>();
             builder.Services.AddScoped<IProductRepository, ProductRepository>();
@@ -126,8 +126,6 @@ namespace Api
                 app.UseSwagger();
                 app.UseSwaggerUI();
             }
-
-            app.UseHttpsRedirection();
             app.UseCors("AllowAll");
             app.UseAuthentication(); // JWT!
             app.UseAuthorization();

@@ -9,7 +9,9 @@ namespace Project.Application.Dtos
 {
     public class ClientCreateDto
     {
+        
         [Required(ErrorMessage = "Identification type is required.")]
+        
         public string IdentificationType { get; set; }
 
         [Required(ErrorMessage = "Identification number is required.")]
@@ -20,11 +22,13 @@ namespace Project.Application.Dtos
         [Required(ErrorMessage = "First name is required.")]
         [RegularExpression("^[a-zA-ZáéíóúÁÉÍÓÚñÑ ]+$", ErrorMessage = "First name must contain only letters and spaces.")]
         [StringLength(10, ErrorMessage = "First name cannot exceed 50 characters.")]
+
         public string FirstName { get; set; }
 
         [Required(ErrorMessage = "Last name is required.")]
         [RegularExpression("^[a-zA-ZáéíóúÁÉÍÓÚñÑ ]+$", ErrorMessage = "Last name must contain only letters and spaces.")]
         [StringLength(50, ErrorMessage = "Last name cannot exceed 50 characters.")]
+        
         public string LastName { get; set; }
 
         [Required(ErrorMessage = "Phone is required.")]
@@ -40,5 +44,8 @@ namespace Project.Application.Dtos
         [Required(ErrorMessage = "Address is required.")]
         [StringLength(200, ErrorMessage = "Address cannot exceed 200 characters.")]
         public string Address { get; set; }
+        
+       
+
     }
 }

@@ -91,8 +91,8 @@ namespace Project.Application.Services
         {
             if (clientDto == null) throw new ArgumentNullException(nameof(clientDto));
 
-            // Validación de cédula (asumiendo que solo aplica para cédulas ecuatorianas)
-            if (clientDto.IdentificationType == "CED" && !VerificaCedula(clientDto.IdentificationNumber))
+          
+            if (!VerificaCedula(clientDto.IdentificationNumber))
                 throw new InvalidOperationException("El número de cédula no es válido.");
 
             // Validación de unicidad

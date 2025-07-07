@@ -36,7 +36,7 @@ namespace Api.Controllers
         }
 
         [HttpPost]
-        [Authorize(Roles = "Administrator,user")]
+        [Authorize(Roles = "Administrator")]
         public async Task<IActionResult> Create([FromBody] ClientCreateDto clientDto)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
@@ -46,7 +46,7 @@ namespace Api.Controllers
         }
 
         [HttpPut("{id}")]
-        [Authorize(Roles = "Administrator,user")]
+        [Authorize(Roles = "Administrator")]
         public async Task<IActionResult> Update(int id, [FromBody] ClientUpdateDto clientDto)
         {
             if (id != clientDto.ClientId) return BadRequest();
