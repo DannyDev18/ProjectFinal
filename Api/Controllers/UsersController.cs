@@ -106,28 +106,55 @@ namespace Api.Controllers
         [Authorize(Roles = "Administrator")]
         public async Task<ActionResult> UpdateUser(string id, [FromBody] UserUpdateDto dto)
         {
-            if (id != dto.Id) return BadRequest();
+            if (id != dto.Id) return BadRequest("ID mismatch");
 
             var user = await _userManager.FindByIdAsync(id);
-            if (user == null) return NotFound();
+            if (user == null) return NotFound("User not found");
 
+            // Update basic user properties
             user.UserName = dto.UserName;
             user.Email = dto.Email;
             user.EmailConfirmed = dto.EmailConfirmed;
+
+            // Update password if provided
+            if (!string.IsNullOrEmpty(dto.Password))
+            {
+                // Remove current password and set new one
+                var removePasswordResult = await _userManager.RemovePasswordAsync(user);
+                if (!removePasswordResult.Succeeded)
+                    return BadRequest(removePasswordResult.Errors);
+
+                var addPasswordResult = await _userManager.AddPasswordAsync(user, dto.Password);
+                if (!addPasswordResult.Succeeded)
+                    return BadRequest(addPasswordResult.Errors);
+            }
+
+            // Update lockout status
             user.LockoutEnd = dto.IsLocked ? System.DateTimeOffset.MaxValue : (System.DateTimeOffset?)null;
 
+            // Update user
             var result = await _userManager.UpdateAsync(user);
             if (!result.Succeeded)
                 return BadRequest(result.Errors);
 
+            // Update roles
             var userRoles = await _userManager.GetRolesAsync(user);
             var rolesToAdd = dto.Roles.Except(userRoles).ToList();
             var rolesToRemove = userRoles.Except(dto.Roles).ToList();
 
             if (rolesToAdd.Any())
-                await _userManager.AddToRolesAsync(user, rolesToAdd);
+            {
+                var addRolesResult = await _userManager.AddToRolesAsync(user, rolesToAdd);
+                if (!addRolesResult.Succeeded)
+                    return BadRequest(addRolesResult.Errors);
+            }
+
             if (rolesToRemove.Any())
-                await _userManager.RemoveFromRolesAsync(user, rolesToRemove);
+            {
+                var removeRolesResult = await _userManager.RemoveFromRolesAsync(user, rolesToRemove);
+                if (!removeRolesResult.Succeeded)
+                    return BadRequest(removeRolesResult.Errors);
+            }
 
             return NoContent();
         }
