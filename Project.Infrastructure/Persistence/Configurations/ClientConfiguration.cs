@@ -15,7 +15,10 @@ namespace Project.Infrastructure.Persistence.Configurations
                 .ValueGeneratedOnAdd();
 
             // Configuración compatible con BD existente
-            
+            builder.Property(c => c.IdentificationType)
+                .HasMaxLength(20)
+                .IsRequired()
+                .HasDefaultValue("DNI"); // Valor por defecto para registros existentes
 
             builder.Property(c => c.IdentificationNumber)
                 .HasMaxLength(20)
@@ -42,6 +45,11 @@ namespace Project.Infrastructure.Persistence.Configurations
                 .IsRequired();
 
             builder.Property(c => c.UpdatedAt);
+
+            // Índices para mejorar rendimiento
+            builder.HasIndex(c => c.IdentificationNumber)
+                .IsUnique()
+                .HasDatabaseName("IX_Clients_IdentificationNumber");
 
             // Relaciones
             builder.HasMany(c => c.Invoices)

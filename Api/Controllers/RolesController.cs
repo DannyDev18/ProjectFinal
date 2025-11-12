@@ -19,7 +19,7 @@ namespace Api.Controllers
 
         // Admin: List all roles
         [HttpGet]
-      //  [Authorize(Roles = "Administrator")]
+      [Authorize(Roles = "Administrator")]
         public ActionResult<IEnumerable<RolDto>> GetRoles()
         {
             var roles = _roleManager.Roles.Select(r => new RolDto
@@ -50,7 +50,7 @@ namespace Api.Controllers
 
         // Admin: Create role
         [HttpPost]
-        //[Authorize(Roles = "Administrator")]
+        [Authorize(Roles = "Administrator")]
         public async Task<ActionResult> CreateRole([FromBody] RoleCreateDto dto)
         {
             var role = new ApplicationRole
@@ -70,7 +70,7 @@ namespace Api.Controllers
 
         // Admin: Update role
         [HttpPut("{id}")]
-        [Authorize(Roles = "Administrator")]
+       [Authorize(Roles = "Administrator")]
         public async Task<ActionResult> UpdateRole(string id, [FromBody] RoleUpdateDto dto)
         {
             if (id != dto.Id) return BadRequest();

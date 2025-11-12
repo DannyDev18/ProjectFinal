@@ -277,7 +277,8 @@ IssueDate = invoice.IssueDate,
     Description = product.Description,
   Price = product.Price,
        Stock = product.Stock,
-  IsActive = product.IsActive
+  IsActive = product.IsActive,
+    ImageUri = product.ImageUri ?? string.Empty // ? AGREGADO: Campo ImageUri faltante
   } : null
         };
   }

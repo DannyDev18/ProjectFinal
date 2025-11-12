@@ -68,7 +68,7 @@ namespace Api.Controllers
         /// Crea un nuevo producto con o sin imagen
 /// </summary>
         [HttpPost]
-        [Authorize(Roles = "Administrator")]
+       [Authorize(Roles = "Administrator")]
         public async Task<IActionResult> Create([FromForm] ProductCreateWithImageDto productDto)
         {
             try
@@ -164,7 +164,7 @@ namespace Api.Controllers
         /// Actualiza un producto existente
      /// </summary>
    [HttpPut("{id}")]
-        [Authorize(Roles = "Administrator")]
+      [Authorize(Roles = "Administrator")]
         public async Task<IActionResult> Update(int id, [FromForm] ProductUpdateWithImageDto productDto)
         {
             try
@@ -298,7 +298,7 @@ Name = product.Name,
         /// Elimina un producto
  /// </summary>
  [HttpDelete("{id}")]
-        [Authorize(Roles = "Administrator")]
+       [Authorize(Roles = "Administrator")]
     public async Task<IActionResult> Delete(int id)
         {
     try

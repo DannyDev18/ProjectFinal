@@ -10,13 +10,13 @@ namespace Project.Domain.Entities
 {
     public class Client
     {
-        public int ClientId { get; set; }
+    public int ClientId { get; set; }
         
         // Campos originales para compatibilidad con BD existente
-        //public string IdentificationType { get; set; } = string.Empty;
+        public string IdentificationType { get; set; } = string.Empty;
         public string IdentificationNumber { get; set; } = string.Empty;
         public string FirstName { get; set; } = string.Empty;
-        public string LastName { get; set; } = string.Empty;
+    public string LastName { get; set; } = string.Empty;
         public string Phone { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
         public string Address { get; set; } = string.Empty;
@@ -31,82 +31,83 @@ namespace Project.Domain.Entities
         // Constructor sin parámetros para EF
         public Client() 
         { 
-            CreatedAt = DateTime.UtcNow;
+          CreatedAt = DateTime.UtcNow;
+        IdentificationType = "DNI"; // Valor por defecto
         }
 
-        // Constructor con validaciones de dominio
-        public Client(string identificationType, string identificationNumber, 
-                     string firstName, string lastName, string phone, 
-                     string email, string address)
+   // Constructor con validaciones de dominio
+  public Client(string identificationType, string identificationNumber, 
+   string firstName, string lastName, string phone, 
+   string email, string address)
         {
-            SetIdentification(identificationType, identificationNumber);
-            SetPersonalInfo(firstName, lastName, phone, email, address);
+  SetIdentification(identificationType, identificationNumber);
+    SetPersonalInfo(firstName, lastName, phone, email, address);
             CreatedAt = DateTime.UtcNow;
         }
 
         public void UpdatePersonalInfo(string firstName, string lastName, 
-                                     string phone, string email, string address)
+ string phone, string email, string address)
         {
-            SetPersonalInfo(firstName, lastName, phone, email, address);
+        SetPersonalInfo(firstName, lastName, phone, email, address);
             UpdatedAt = DateTime.UtcNow;
         }
 
         public void UpdateIdentification(string identificationType, string identificationNumber)
         {
-            SetIdentification(identificationType, identificationNumber);
-            UpdatedAt = DateTime.UtcNow;
+      SetIdentification(identificationType, identificationNumber);
+   UpdatedAt = DateTime.UtcNow;
         }
 
         private void SetIdentification(string type, string number)
         {
-            try
-            {
+   try
+    {
                 // Validar usando Value Object pero mantener en propiedades primitivas
                 var identification = new Identification(type, number);
-                //IdentificationType = identification.Type;
-                IdentificationNumber = identification.Number;
-            }
-            catch (ArgumentException ex)
-            {
-                throw new ClientDomainException($"Invalid identification: {ex.Message}");
-            }
+          IdentificationType = identification.Type;
+          IdentificationNumber = identification.Number;
+          }
+    catch (ArgumentException ex)
+      {
+       throw new ClientDomainException($"Invalid identification: {ex.Message}");
+   }
         }
 
         private void SetPersonalInfo(string firstName, string lastName, 
-                                   string phone, string email, string address)
+           string phone, string email, string address)
         {
-            if (string.IsNullOrWhiteSpace(firstName))
-                throw new ClientDomainException("First name is required");
+if (string.IsNullOrWhiteSpace(firstName))
+     throw new ClientDomainException("First name is required");
 
             if (string.IsNullOrWhiteSpace(lastName))
-                throw new ClientDomainException("Last name is required");
+    throw new ClientDomainException("Last name is required");
 
             if (!string.IsNullOrWhiteSpace(email) && !IsValidEmail(email))
-                throw new ClientDomainException("Invalid email format");
+             throw new ClientDomainException("Invalid email format");
 
-            FirstName = firstName.Trim();
-            LastName = lastName.Trim();
-            Phone = phone?.Trim() ?? string.Empty;
-            Email = email?.Trim() ?? string.Empty;
-            Address = address?.Trim() ?? string.Empty;
+FirstName = firstName.Trim();
+          LastName = lastName.Trim();
+   Phone = phone?.Trim() ?? string.Empty;
+ Email = email?.Trim() ?? string.Empty;
+  Address = address?.Trim() ?? string.Empty;
         }
 
         private static bool IsValidEmail(string email)
         {
-            try
+    try
             {
-                var addr = new System.Net.Mail.MailAddress(email);
-                return addr.Address == email;
+              var addr = new System.Net.Mail.MailAddress(email);
+      return addr.Address == email;
             }
-            catch
+ catch
             {
-                return false;
-            }
+ return false;
+          }
         }
 
         public string GetFullName() => $"{FirstName} {LastName}";
 
         // Método helper para obtener el Value Object cuando sea necesario
-       // public Identification GetIdentification() => new Identification(IdentificationType, IdentificationNumber);
+      public Identification GetIdentification() => new Identification(IdentificationType, IdentificationNumber);
     }
 }

@@ -24,7 +24,7 @@ namespace Api.Controllers
         }
 
         [HttpGet("{id}")]
-        [Authorize(Roles = "Administrator,user")]
+        //[Authorize(Roles = "Administrator,user")]
         public async Task<IActionResult> GetById(int id)
         {
             var invoice = await _invoiceService.GetByIdAsync(id);
@@ -33,7 +33,7 @@ namespace Api.Controllers
         }
 
         [HttpGet]
-        [Authorize(Roles = "Administrator,user")]
+       // [Authorize(Roles = "Administrator,user")]
         public async Task<IActionResult> GetAll(int pageNumber = 1, int pageSize = 10, string? searchTerm = null)
         {
             var invoices = await _invoiceService.GetAllAsync(pageNumber, pageSize, searchTerm);
@@ -41,7 +41,7 @@ namespace Api.Controllers
         }
 
         [HttpPost]
-        [Authorize(Roles = "Administrator,user")]
+       // [Authorize(Roles = "Administrator,user")]
         public async Task<IActionResult> Create([FromBody] InvoiceCreateDto invoiceDto)
         {
             if (invoiceDto?.InvoiceDetails == null || !invoiceDto.InvoiceDetails.Any())
@@ -69,7 +69,7 @@ namespace Api.Controllers
         }
 
         [HttpPut("{id}")]
-        [Authorize(Roles = "Administrator")]
+       // [Authorize(Roles = "Administrator")]
         public async Task<IActionResult> Update(int id, [FromBody] InvoiceUpdateDto invoiceDto)
         {
             if (id != invoiceDto.InvoiceId) return BadRequest("El ID de la URL no coincide con el de la factura.");
@@ -93,7 +93,7 @@ namespace Api.Controllers
         }
 
         [HttpDelete("{id}")]
-        [Authorize(Roles = "Administrator")]
+        //[Authorize(Roles = "Administrator")]
         public async Task<IActionResult> Delete(int id)
         {
             try
@@ -112,7 +112,7 @@ namespace Api.Controllers
         }
 
         [HttpGet("{invoiceId}/details")]
-        [Authorize(Roles = "Administrator,user")]
+        //[Authorize(Roles = "Administrator,user")]
         public async Task<IActionResult> GetDetails(int invoiceId)
         {
             var details = await _invoiceService.GetInvoiceDetailsAsync(invoiceId);
@@ -120,7 +120,7 @@ namespace Api.Controllers
         }
 
         [HttpPost("{invoiceId}/add-product")]
-        [Authorize(Roles = "Administrator,user")]
+       // [Authorize(Roles = "Administrator,user")]
         public async Task<IActionResult> AddProduct(int invoiceId, [FromBody] InvoiceDetailCreateDto detailDto)
         {
             if (detailDto == null || detailDto.ProductId <= 0 || detailDto.Quantity <= 0)
@@ -142,7 +142,7 @@ namespace Api.Controllers
         }
 
         [HttpDelete("{invoiceId}/remove-product/{productId}")]
-        [Authorize(Roles = "Administrator,user")]
+       // [Authorize(Roles = "Administrator,user")]
         public async Task<IActionResult> RemoveProduct(int invoiceId, int productId)
         {
             try

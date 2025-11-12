@@ -51,7 +51,7 @@ namespace Api.Controllers
 
         // Admin: Get user by id
         [HttpGet("{id}")]
-        [Authorize(Roles = "Administrator")]
+       [Authorize(Roles = "Administrator")]
         public async Task<ActionResult<UserDto>> GetUser(string id)
         {
             var user = await _userManager.FindByIdAsync(id);
@@ -70,7 +70,7 @@ namespace Api.Controllers
 
         // Admin: Create user (with role)
         [HttpPost]
-       // [Authorize(Roles = "Administrator")]
+        [Authorize(Roles = "Administrator")]
         public async Task<ActionResult> CreateUser([FromBody] UserCreateDto dto)
         {
             var user = new ApplicationUser

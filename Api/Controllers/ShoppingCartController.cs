@@ -8,7 +8,7 @@ namespace Api.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize] // Requiere autenticación para todas las acciones
+    //[Authorize] // Requiere autenticación para todas las acciones
     public class ShoppingCartController : ControllerBase
     {
   private readonly IShoppingCartService _shoppingCartService;

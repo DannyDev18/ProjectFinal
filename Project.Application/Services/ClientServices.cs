@@ -57,7 +57,7 @@ namespace Project.Application.Services
 
             try
             {
-                // Usar el constructor de dominio que incluye validaciones
+                // Usar el constructor de dominio que incluye validaciones CON IdentificationType
                 var client = new Client(
                     clientDto.IdentificationType,
                     clientDto.IdentificationNumber,
@@ -67,7 +67,6 @@ namespace Project.Application.Services
                     clientDto.Email,
                     clientDto.Address
                 );
-
                 await _unitOfWork.Clients.AddAsync(client);
                 await _unitOfWork.SaveChangesAsync();
             }
@@ -77,7 +76,6 @@ namespace Project.Application.Services
                 throw new InvalidOperationException($"Error creating client: {ex.Message}", ex);
             }
         }
-
         public async Task UpdateAsync(ClientUpdateDto clientDto)
         {
             if (clientDto == null) throw new ArgumentNullException(nameof(clientDto));
@@ -86,37 +84,39 @@ namespace Project.Application.Services
             if (existingClient == null)
                 throw new InvalidOperationException("Client does not exist.");
 
-            // Validar unicidad si cambia la identificación
-            if (!string.Equals(existingClient.IdentificationNumber, clientDto.IdentificationNumber, StringComparison.OrdinalIgnoreCase))
-            {
-                if (await _unitOfWork.Clients.ExistsAsync(c => c.IdentificationNumber == clientDto.IdentificationNumber))
-                    throw new InvalidOperationException("A client with this identification already exists.");
-            }
+             // Validar unicidad si cambia la identificación
+              if (!string.Equals(existingClient.IdentificationNumber, clientDto.IdentificationNumber, StringComparison.OrdinalIgnoreCase))
+             {
+    if (await _unitOfWork.Clients.ExistsAsync(c => c.IdentificationNumber == clientDto.IdentificationNumber))
+            throw new InvalidOperationException("A client with this identification already exists.");
+           }
 
-            try
-            {
-                // Usar métodos de dominio para actualizar
-                existingClient.UpdatePersonalInfo(
-                    clientDto.FirstName,
-                    clientDto.LastName,
-                    clientDto.Phone,
-                    clientDto.Email,
+         try
+             {
+             // Usar métodos de dominio para actualizar
+              existingClient.UpdatePersonalInfo(
+      clientDto.FirstName,
+             clientDto.LastName,
+           clientDto.Phone,
+                clientDto.Email,
                     clientDto.Address
-                );
+        );
 
-                if (!string.Equals(existingClient.IdentificationNumber, clientDto.IdentificationNumber, StringComparison.OrdinalIgnoreCase))
-                {
-                    existingClient.UpdateIdentification(clientDto.IdentificationType, clientDto.IdentificationNumber);
-                }
+      // Solo actualizar identificación si realmente cambió
+        if (!string.Equals(existingClient.IdentificationNumber, clientDto.IdentificationNumber, StringComparison.OrdinalIgnoreCase) ||
+         !string.Equals(existingClient.IdentificationType, clientDto.IdentificationType, StringComparison.OrdinalIgnoreCase))
+           {
+          existingClient.UpdateIdentification(clientDto.IdentificationType, clientDto.IdentificationNumber);
+          }
 
-                _unitOfWork.Clients.Update(existingClient);
-                await _unitOfWork.SaveChangesAsync();
+      _unitOfWork.Clients.Update(existingClient);
+          await _unitOfWork.SaveChangesAsync();
+          }
+    catch (Exception ex)
+        {
+      throw new InvalidOperationException($"Error updating client: {ex.Message}", ex);
+         }
             }
-            catch (Exception ex)
-            {
-                throw new InvalidOperationException($"Error updating client: {ex.Message}", ex);
-            }
-        }
 
         public async Task DeleteAsync(int id)
         {
@@ -154,7 +154,7 @@ namespace Project.Application.Services
             {
                 ClientId = client.ClientId,
                 IdentificationNumber = client.IdentificationNumber,
-              //  IdentificationType = client.IdentificationType,
+                IdentificationType = client.IdentificationType,
                 FirstName = client.FirstName,
                 LastName = client.LastName,
                 Phone = client.Phone,
