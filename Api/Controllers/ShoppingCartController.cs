@@ -11,7 +11,7 @@ namespace Api.Controllers
     [Authorize] // Requiere autenticación para todas las acciones
     public class ShoppingCartController : ControllerBase
     {
-     private readonly IShoppingCartService _shoppingCartService;
+  private readonly IShoppingCartService _shoppingCartService;
 
   public ShoppingCartController(IShoppingCartService shoppingCartService)
 {
@@ -28,15 +28,15 @@ namespace Api.Controllers
       {
      var userId = GetCurrentUserId();
      var cart = await _shoppingCartService.GetCartAsync(userId);
-     return Ok(cart);
+ return Ok(cart);
    }
-  catch (Exception ex)
+catch (Exception ex)
    {
-    return BadRequest(new { message = ex.Message });
+  return BadRequest(new { message = ex.Message });
  }
      }
 
-        /// <summary>
+/// <summary>
      /// Agrega un producto al carrito
    /// </summary>
     [HttpPost("add")]
@@ -48,15 +48,15 @@ namespace Api.Controllers
      var cartItem = await _shoppingCartService.AddToCartAsync(userId, addToCartDto);
    return Ok(cartItem);
       }
-    catch (Exception ex)
+  catch (Exception ex)
    {
       return BadRequest(new { message = ex.Message });
   }
-        }
+  }
 
 /// <summary>
   /// Actualiza la cantidad de un producto en el carrito
-     /// </summary>
+   /// </summary>
     [HttpPut("update")]
       public async Task<IActionResult> UpdateCartItem([FromBody] UpdateCartItemDto updateDto)
      {
@@ -86,7 +86,7 @@ namespace Api.Controllers
       }
    catch (Exception ex)
      {
-       return BadRequest(new { message = ex.Message });
+    return BadRequest(new { message = ex.Message });
      }
   }
 
@@ -98,7 +98,7 @@ namespace Api.Controllers
   {
   try
     {
-   var userId = GetCurrentUserId();
+var userId = GetCurrentUserId();
     await _shoppingCartService.ClearCartAsync(userId);
      return Ok(new { message = "Cart cleared successfully" });
        }
@@ -112,8 +112,8 @@ namespace Api.Controllers
 /// Obtiene el número total de items en el carrito
    /// </summary>
       [HttpGet("count")]
-       public async Task<IActionResult> GetCartItemCount()
-     {
+  public async Task<IActionResult> GetCartItemCount()
+  {
   try
  {
     var userId = GetCurrentUserId();
@@ -132,7 +132,7 @@ namespace Api.Controllers
      [HttpGet("total")]
  public async Task<IActionResult> GetCartTotal()
   {
-       try
+     try
     {
     var userId = GetCurrentUserId();
     var total = await _shoppingCartService.GetCartTotalAsync(userId);
@@ -166,41 +166,29 @@ namespace Api.Controllers
    /// Procesa el checkout (convierte carrito en factura)
    /// </summary>
   [HttpPost("checkout")]
-  public async Task<IActionResult> Checkout([FromBody] CheckoutDto checkoutDto)
-     {
+  public async Task<IActionResult> Checkout([FromBody] CheckoutRequestDto checkoutDto)
+  {
    try
     {
       var userId = GetCurrentUserId();
  var invoice = await _shoppingCartService.CheckoutAsync(userId, checkoutDto.ClientId);
 return Ok(new { 
-  message = "Checkout completed successfully", 
+message = "Checkout completed successfully", 
      invoice = invoice 
  });
      }
    catch (Exception ex)
  {
-       return BadRequest(new { message = ex.Message });
-   }
+ return BadRequest(new { message = ex.Message });
+ }
    }
 
  private string GetCurrentUserId()
    {
        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-     if (string.IsNullOrEmpty(userId))
+   if (string.IsNullOrEmpty(userId))
     throw new UnauthorizedAccessException("User not authenticated");
     return userId;
       }
-    }
-
-  // DTO para checkout
-  public class CheckoutDto
-      {
-     public int ClientId { get; set; }
-        // En el futuro se pueden agregar más campos como método de pago, dirección, etc.
-     /*
-       public string PaymentMethodId { get; set; } = string.Empty;
-  public string ShippingAddress { get; set; } = string.Empty;
-      public string? Notes { get; set; }
-        */
     }
 }

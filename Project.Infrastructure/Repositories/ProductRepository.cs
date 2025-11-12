@@ -2,6 +2,11 @@
 using Project.Domain.Interfaces;
 using Project.Infrastructure.Frameworks.EntityFramework;
 using Microsoft.EntityFrameworkCore;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Linq.Expressions;
+using System.Threading.Tasks;
 
 namespace Project.Infrastructure.Repositories
 {
@@ -104,6 +109,14 @@ namespace Project.Infrastructure.Repositories
         public async Task<bool> ExistsByIdAsync(int productId)
         {
             return await _dbSet.AnyAsync(p => p.ProductId == productId);
+        }
+
+        public async Task<int> CountAsync(Expression<Func<Product, bool>> predicate = null)
+        {
+          if (predicate == null)
+         return await _dbSet.CountAsync();
+ 
+       return await _dbSet.CountAsync(predicate);
         }
     }
 }

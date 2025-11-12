@@ -15,9 +15,7 @@ namespace Project.Infrastructure.Persistence.Configurations
                 .ValueGeneratedOnAdd();
 
             // Configuración compatible con BD existente
-            builder.Property(c => c.IdentificationType)
-                .HasMaxLength(50)
-                .IsRequired();
+            
 
             builder.Property(c => c.IdentificationNumber)
                 .HasMaxLength(20)

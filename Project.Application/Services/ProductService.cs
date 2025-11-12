@@ -100,6 +100,7 @@ namespace Project.Application.Services
             existingProduct.Price = productDto.Price;
             existingProduct.Stock = productDto.Stock;
             existingProduct.IsActive = productDto.IsActive;
+            existingProduct.ImageUri = productDto.ImageUri ?? string.Empty; // Actualizar ImageUri
 
             _unitOfWork.Products.Update(existingProduct);
             await _unitOfWork.SaveChangesAsync();
@@ -160,7 +161,8 @@ namespace Project.Application.Services
                 Description = product.Description,
                 Price = product.Price,
                 Stock = product.Stock,
-                IsActive = product.IsActive
+                IsActive = product.IsActive,
+                ImageUri = product.ImageUri // Agregar ImageUri al mapping
             };
         }
     }

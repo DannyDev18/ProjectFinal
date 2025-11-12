@@ -10,7 +10,7 @@ namespace Api.Controllers
 {
     [ApiController]
    [Route("api/[controller]")]
-    [Authorize]
+ [Authorize]
  public class PaymentController : ControllerBase
    {
         private readonly IPaymentService _paymentService;
@@ -30,7 +30,7 @@ namespace Api.Controllers
  {
      try
   {
-           var userId = GetCurrentUserId();
+     var userId = GetCurrentUserId();
      _logger.LogInformation("Processing payment for user {UserId}, invoice {InvoiceId}", 
        userId, paymentDto.InvoiceId);
 
@@ -38,19 +38,19 @@ namespace Api.Controllers
 paymentDto.InvoiceId, 
      paymentDto.PaymentMethodId, 
   paymentDto.Amount,
-    paymentDto.AdditionalInfo
+ paymentDto.AdditionalInfo
   );
        
             var result = new PaymentResultDto
      {
-      Success = payment.Status == PaymentStatus.Completed,
+Success = payment.Status == PaymentStatus.Completed,
    TransactionId = payment.TransactionId,
    Status = payment.Status.ToString(),
        Message = payment.Status == PaymentStatus.Completed 
  ? "Payment processed successfully" 
       : payment.FailureReason ?? "Payment processing failed",
 Payment = MapToPaymentDto(payment)
-      };
+    };
 
       if (result.Success)
       {
@@ -60,14 +60,14 @@ Payment = MapToPaymentDto(payment)
    {
     return BadRequest(result);
          }
-    }
+  }
        catch (Exception ex)
-   {
+{
     _logger.LogError(ex, "Error processing payment");
-      return BadRequest(new PaymentResultDto 
+  return BadRequest(new PaymentResultDto 
   { 
      Success = false, 
-       Message = ex.Message,
+  Message = ex.Message,
         ErrorCode = "PAYMENT_ERROR"
         });
  }
@@ -78,20 +78,20 @@ Payment = MapToPaymentDto(payment)
       /// </summary>
  [HttpPost("mobile")]
       public async Task<IActionResult> ProcessMobilePayment([FromBody] MobilePaymentDto mobilePaymentDto)
-        {
+ {
      try
     {
    var userId = GetCurrentUserId();
      _logger.LogInformation("Processing mobile payment for user {UserId}, device {DeviceId}", 
       userId, mobilePaymentDto.DeviceId);
 
-            var payment = await _paymentService.ProcessMobilePaymentAsync(
+       var payment = await _paymentService.ProcessMobilePaymentAsync(
     mobilePaymentDto.InvoiceId,
     mobilePaymentDto.PaymentMethodId,
    mobilePaymentDto.Amount
  );
        
-    var result = new PaymentResultDto
+ var result = new PaymentResultDto
       {
       Success = payment.Status == PaymentStatus.Completed,
    TransactionId = payment.TransactionId,
@@ -106,12 +106,12 @@ Payment = MapToPaymentDto(payment)
    }
    catch (Exception ex)
    {
-    _logger.LogError(ex, "Error processing mobile payment");
+_logger.LogError(ex, "Error processing mobile payment");
       return BadRequest(new PaymentResultDto 
    { 
         Success = false, 
        Message = ex.Message,
-        ErrorCode = "MOBILE_PAYMENT_ERROR"
+      ErrorCode = "MOBILE_PAYMENT_ERROR"
  });
      }
        }
@@ -123,17 +123,17 @@ Payment = MapToPaymentDto(payment)
    public async Task<IActionResult> GetPaymentStatus(string transactionId)
    {
      try
-    {
+ {
    var payment = await _paymentService.GetPaymentStatusAsync(transactionId);
    if (payment == null)
    return NotFound(new { message = "Payment not found" });
          
     return Ok(new PaymentResultDto
-        {
+    {
   Success = payment.Status == PaymentStatus.Completed,
     TransactionId = payment.TransactionId,
       Status = payment.Status.ToString(),
-          Payment = MapToPaymentDto(payment)
+       Payment = MapToPaymentDto(payment)
  });
       }
     catch (Exception ex)
@@ -169,7 +169,7 @@ public async Task<IActionResult> GetPaymentMethods()
  /// <summary>
     /// Obtiene historial de pagos del usuario
   /// </summary>
-    [HttpGet("history")]
+  [HttpGet("history")]
  public async Task<IActionResult> GetPaymentHistory()
    {
   try
@@ -178,7 +178,7 @@ public async Task<IActionResult> GetPaymentMethods()
       var payments = await _paymentService.GetUserPaymentHistoryAsync(userId);
         var paymentDtos = payments.Select(MapToPaymentDto).ToList();
         
-       var historyDto = new PaymentHistoryDto
+ var historyDto = new PaymentHistoryDto
           {
       Payments = paymentDtos,
    TotalPaid = paymentDtos.Where(p => p.Status == "Completed").Sum(p => p.Amount),
@@ -199,7 +199,7 @@ public async Task<IActionResult> GetPaymentMethods()
  /// Cancela un pago pendiente
   /// </summary>
       [HttpPost("{paymentId}/cancel")]
- public async Task<IActionResult> CancelPayment(int paymentId, [FromBody] CancelPaymentRequest request)
+ public async Task<IActionResult> CancelPayment(int paymentId, [FromBody] CancelPaymentRequestDto request)
      {
    try
  {
@@ -219,7 +219,7 @@ catch (Exception ex)
   /// <summary>
  /// Procesa un reembolso (solo administradores)
    /// </summary>
-      [HttpPost("refund")]
+  [HttpPost("refund")]
       [Authorize(Roles = "Administrator")]
      public async Task<IActionResult> RefundPayment([FromBody] RefundPaymentDto refundDto)
   {
@@ -234,24 +234,24 @@ refundDto.PaymentId,
      return Ok(new { 
         message = "Refund processed successfully",
     payment = MapToPaymentDto(payment)
-      });
+    });
    }
       catch (Exception ex)
   {
       _logger.LogError(ex, "Error processing refund");
  return BadRequest(new { message = ex.Message });
  }
-     }
+  }
 
    /// <summary>
      /// Valida el monto de un pago
   /// </summary>
      [HttpPost("validate-amount")]
-     public async Task<IActionResult> ValidatePaymentAmount([FromBody] ValidateAmountRequest request)
+     public async Task<IActionResult> ValidatePaymentAmount([FromBody] ValidateAmountRequestDto request)
         {
  try
       {
-        var isValid = await _paymentService.ValidatePaymentAmountAsync(request.InvoiceId, request.Amount);
+ var isValid = await _paymentService.ValidatePaymentAmountAsync(request.InvoiceId, request.Amount);
     return Ok(new { isValid = isValid });
     }
      catch (Exception ex)
@@ -274,15 +274,18 @@ return userId;
   return new PaymentDto
       {
     PaymentId = payment.PaymentId,
-      InvoiceId = payment.InvoiceId,
+    InvoiceId = payment.InvoiceId,
  PaymentMethodId = payment.PaymentMethodId,
+        PaymentMethodName = payment.PaymentMethod?.Name ?? string.Empty,
   Amount = payment.Amount,
      TransactionId = payment.TransactionId,
  Status = payment.Status.ToString(),
    PaymentDate = payment.PaymentDate,
    ProcessedAt = payment.ProcessedAt,
       ProcessorResponse = payment.ProcessorResponse,
-       FailureReason = payment.FailureReason
+       FailureReason = payment.FailureReason,
+    CreatedAt = payment.CreatedAt,
+        UpdatedAt = payment.UpdatedAt
    };
  }
 
@@ -291,28 +294,18 @@ return userId;
    return new PaymentMethodDto
     {
  PaymentMethodId = method.PaymentMethodId,
-        Name = method.Name,
+    Name = method.Name,
     Description = method.Description,
     IsActive = method.IsActive,
   Type = method.Type.ToString(),
      MinAmount = method.MinAmount,
   MaxAmount = method.MaxAmount,
-      ProcessingFee = method.ProcessingFee,
+   ProcessingFee = method.ProcessingFee,
         IconUrl = method.IconUrl,
-       DisplayOrder = method.DisplayOrder
+       DisplayOrder = method.DisplayOrder,
+     CreatedAt = method.CreatedAt,
+            UpdatedAt = method.UpdatedAt
       };
         }
-    }
-
-    // Request DTOs
-    public class CancelPaymentRequest
-    {
-   public string? Reason { get; set; }
-    }
-
- public class ValidateAmountRequest
-    {
-    public int InvoiceId { get; set; }
-public decimal Amount { get; set; }
     }
 }

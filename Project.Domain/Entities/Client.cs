@@ -13,7 +13,7 @@ namespace Project.Domain.Entities
         public int ClientId { get; set; }
         
         // Campos originales para compatibilidad con BD existente
-        public string IdentificationType { get; set; } = string.Empty;
+        //public string IdentificationType { get; set; } = string.Empty;
         public string IdentificationNumber { get; set; } = string.Empty;
         public string FirstName { get; set; } = string.Empty;
         public string LastName { get; set; } = string.Empty;
@@ -63,7 +63,7 @@ namespace Project.Domain.Entities
             {
                 // Validar usando Value Object pero mantener en propiedades primitivas
                 var identification = new Identification(type, number);
-                IdentificationType = identification.Type;
+                //IdentificationType = identification.Type;
                 IdentificationNumber = identification.Number;
             }
             catch (ArgumentException ex)
@@ -107,6 +107,6 @@ namespace Project.Domain.Entities
         public string GetFullName() => $"{FirstName} {LastName}";
 
         // Método helper para obtener el Value Object cuando sea necesario
-        public Identification GetIdentification() => new Identification(IdentificationType, IdentificationNumber);
+       // public Identification GetIdentification() => new Identification(IdentificationType, IdentificationNumber);
     }
 }

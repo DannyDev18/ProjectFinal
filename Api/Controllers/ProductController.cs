@@ -2,11 +2,9 @@
 using Microsoft.AspNetCore.Mvc;
 using Project.Application.Dtos;
 using Project.Application.Services;
-using Project.Domain.Entities;
 
 namespace Api.Controllers
 {
-
     [ApiController]
     [Route("api/[controller]")]
     public class ProductController : ControllerBase
@@ -16,211 +14,318 @@ namespace Api.Controllers
         private readonly ILogger<ProductController> _logger;
 
         public ProductController(
-          IProductServices productService,
+   IProductServices productService,
           IImageService imageService,
-         ILogger<ProductController> logger)
+   ILogger<ProductController> logger)
         {
             _productService = productService;
-            _imageService = imageService;
-            _logger = logger;
+     _imageService = imageService;
+        _logger = logger;
         }
 
-        [HttpGet("{id}")]
+        /// <summary>
+        /// Obtiene un producto por ID
+        /// </summary>
+  [HttpGet("{id}")]
         [Authorize(Roles = "Administrator,user")]
         public async Task<IActionResult> GetById(int id)
         {
-            var product = await _productService.GetByIdAsync(id);
-            if (product == null) return NotFound();
-            return Ok(product);
+    try
+            {
+              var product = await _productService.GetByIdAsync(id);
+        if (product == null) 
+      return NotFound(new { message = "Product not found" });
+     
+      return Ok(product);
+          }
+      catch (Exception ex)
+         {
+    _logger.LogError(ex, "Error getting product with ID: {ProductId}", id);
+      return StatusCode(500, new { message = "Internal server error" });
+  }
         }
 
+        /// <summary>
+        /// Obtiene todos los productos con paginación y búsqueda
+      /// </summary>
         [HttpGet]
         [Authorize(Roles = "Administrator,user")]
-        public async Task<IActionResult> GetAll(int pageNumber = 1, int pageSize = 10, string? searchTerm = null)
-        {
-            var products = await _productService.GetAllAsync(pageNumber, pageSize, searchTerm);
-            return Ok(products);
+      public async Task<IActionResult> GetAll(int pageNumber = 1, int pageSize = 10, string? searchTerm = null)
+   {
+         try
+      {
+    var products = await _productService.GetAllAsync(pageNumber, pageSize, searchTerm);
+           return Ok(products);
+      }
+            catch (Exception ex)
+ {
+     _logger.LogError(ex, "Error getting products");
+         return StatusCode(500, new { message = "Internal server error" });
+      }
         }
 
+        /// <summary>
+        /// Crea un nuevo producto con o sin imagen
+/// </summary>
         [HttpPost]
         [Authorize(Roles = "Administrator")]
-        public async Task<IActionResult> Create([FromBody] ProductCreateDto product)
-        {
-            await _productService.AddAsync(product);
-            return StatusCode(StatusCodes.Status201Created);
-        }
-
-        /// <summary>
-        /// Crear producto con imagen
-        /// </summary>
-        [HttpPost("with-image")]
-        [Authorize(Roles = "Administrator")]
-        public async Task<IActionResult> CreateWithImage([FromForm] ProductCreateWithImageDto productDto)
+        public async Task<IActionResult> Create([FromForm] ProductCreateWithImageDto productDto)
         {
             try
+     {
+    _logger.LogInformation("Creating product: {Name}", productDto.Name);
+
+    string? imageUrl = null;
+    string? publicId = null;
+
+        // Si se proporciona imagen, subirla a Cloudinary
+         if (productDto.Image != null)
+    {
+         var imageResult = await _imageService.UploadImageAsync(productDto.Image, "products");
+
+      if (!imageResult.Success)
+    {
+       return BadRequest(new
+               {
+         success = false,
+           message = "Failed to upload image",
+     error = imageResult.ErrorMessage
+            });
+}
+
+             imageUrl = imageResult.SecureUrl;
+   publicId = imageResult.PublicId;
+    }
+
+    // Crear el producto
+            var createDto = new ProductCreateDto
+      {
+            Code = productDto.Code,
+            Name = productDto.Name,
+         Description = productDto.Description ?? string.Empty,
+    Price = productDto.Price,
+   Stock = productDto.Stock,
+        ImageUri = imageUrl ?? string.Empty
+       };
+
+            try
+       {
+      await _productService.AddAsync(createDto);
+   _logger.LogInformation("Product created successfully: {Code}", createDto.Code);
+             }
+                catch (Exception dbEx)
+       {
+              // Si falla la BD, eliminar imagen subida
+  if (!string.IsNullOrEmpty(publicId))
+   {
+           try
+           {
+            await _imageService.DeleteImageAsync(publicId);
+}
+         catch (Exception cleanupEx)
+        {
+           _logger.LogWarning(cleanupEx, "Failed to cleanup image after database error");
+           }
+         }
+
+         throw dbEx;
+     }
+
+        var response = new
+      {
+  success = true,
+              message = imageUrl != null ? "Product created successfully with image" : "Product created successfully",
+        product = new
+      {
+              code = createDto.Code,
+     name = createDto.Name,
+           description = createDto.Description,
+               price = createDto.Price,
+       stock = createDto.Stock,
+   imageUrl = imageUrl
+         }
+          };
+
+         return StatusCode(StatusCodes.Status201Created, response);
+       }
+        catch (Exception ex)
             {
-                // Primero crear el producto sin imagen
-                var createDto = new ProductCreateDto
-                {
-                    Code = productDto.Code,
-                    Name = productDto.Name,
-                    Description = productDto.Description,
-                    Price = productDto.Price,
-                    Stock = productDto.Stock
+   _logger.LogError(ex, "Error creating product");
+        return StatusCode(500, new
+              {
+     success = false,
+     message = "Error creating product",
+          error = ex.Message
+    });
+       }
+  }
+
+        /// <summary>
+        /// Actualiza un producto existente
+     /// </summary>
+   [HttpPut("{id}")]
+        [Authorize(Roles = "Administrator")]
+        public async Task<IActionResult> Update(int id, [FromForm] ProductUpdateWithImageDto productDto)
+        {
+            try
+  {
+    // Verificar que el producto existe
+       var existingProduct = await _productService.GetByIdAsync(id);
+        if (existingProduct == null)
+         {
+       return NotFound(new { message = "Product not found" });
+            }
+
+            string? newImageUrl = existingProduct.ImageUri;
+            string? publicId = null;
+
+                // Si se proporciona nueva imagen
+     if (productDto.Image != null)
+          {
+  var imageResult = await _imageService.UploadImageAsync(productDto.Image, "products");
+
+ if (!imageResult.Success)
+        {
+          return BadRequest(new { message = "Failed to upload image", error = imageResult.ErrorMessage });
+   }
+
+       newImageUrl = imageResult.SecureUrl;
+         publicId = imageResult.PublicId;
+
+         // Eliminar imagen anterior si existe
+        if (!string.IsNullOrWhiteSpace(existingProduct.ImageUri))
+        {
+      try
+      {
+         await _imageService.DeleteImageByUrlAsync(existingProduct.ImageUri);
+            }
+   catch (Exception ex)
+    {
+      _logger.LogWarning(ex, "Failed to delete old image");
+             }
+      }
+     }
+
+       // Actualizar el producto
+ var updateDto = new ProductUpdateDto
+     {
+          ProductId = id,
+         Code = productDto.Code,
+    Name = productDto.Name,
+           Description = productDto.Description,
+       Price = productDto.Price,
+         Stock = productDto.Stock,
+      IsActive = productDto.IsActive,
+        ImageUri = newImageUrl ?? string.Empty
                 };
 
-                await _productService.AddAsync(createDto);
+      await _productService.UpdateAsync(updateDto);
 
-                // Si se proporcionó una imagen, subirla
-                if (productDto.Image != null)
-                {
-                    var imageResult = await _imageService.UploadImageAsync(productDto.Image, "products");
+     var response = new
+    {
+   message = productDto.Image != null ? "Product updated successfully with new image" : "Product updated successfully",
+       product = new
+   {
+  id = id,
+     code = updateDto.Code,
+             name = updateDto.Name,
+    imageUrl = newImageUrl
+   }
+    };
 
-                    if (imageResult.Success)
-                    {
-                        // Aquí podrías actualizar el producto con la URL de la imagen
-                        // Esto requeriría modificar el ProductService para incluir un método UpdateImageUrl
-                        _logger.LogInformation("Product created with image: {ImageUrl}", imageResult.SecureUrl);
-                        return Ok(new
-                        {
-                            message = "Product created successfully with image",
-                            imageUrl = imageResult.SecureUrl,
-                            publicId = imageResult.PublicId
-                        });
-                    }
-                    else
-                    {
-                        _logger.LogWarning("Product created but image upload failed: {Error}", imageResult.ErrorMessage);
-                        return Ok(new { message = "Product created but image upload failed", error = imageResult.ErrorMessage });
-                    }
-                }
-
-                return StatusCode(StatusCodes.Status201Created, new { message = "Product created successfully" });
-            }
+     return Ok(response);
+   }
             catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error creating product with image");
-                return StatusCode(500, new { message = "Internal server error" });
-            }
-        }
-
-        [HttpPut("{id}")]
-        [Authorize(Roles = "Administrator")]
-        public async Task<IActionResult> Update(int id, [FromBody] ProductUpdateDto product)
-        {
-            if (id != product.ProductId) return BadRequest();
-            await _productService.UpdateAsync(product);
-            return NoContent();
+       {
+       _logger.LogError(ex, "Error updating product with ID: {ProductId}", id);
+    return StatusCode(500, new { message = "Internal server error" });
+ }
         }
 
         /// <summary>
-        /// Actualizar imagen de producto
-        /// </summary>
-        [HttpPut("{id}/image")]
-        [Authorize(Roles = "Administrator")]
-        public async Task<IActionResult> UpdateProductImage(int id, IFormFile image, [FromQuery] string? oldImageUrl = null)
-        {
-            try
-            {
-                // Verificar que el producto existe
-                var product = await _productService.GetByIdAsync(id);
-                if (product == null)
-                {
-                    return NotFound(new { message = "Product not found" });
-                }
-
-                // Subir nueva imagen
-                var imageResult = await _imageService.UploadImageAsync(image, "products");
-
-                if (!imageResult.Success)
-                {
-                    return BadRequest(new { message = "Failed to upload image", error = imageResult.ErrorMessage });
-                }
-
-                // Eliminar imagen anterior si se proporcionó
-                if (!string.IsNullOrWhiteSpace(oldImageUrl))
-                {
-                    try
-                    {
-                        await _imageService.DeleteImageByUrlAsync(oldImageUrl);
-                        _logger.LogInformation("Old image deleted: {OldImageUrl}", oldImageUrl);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogWarning(ex, "Failed to delete old image: {OldImageUrl}", oldImageUrl);
-                    }
-                }
-
-                return Ok(new
-                {
-                    message = "Product image updated successfully",
-                    imageUrl = imageResult.SecureUrl,
-                    publicId = imageResult.PublicId
-                });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error updating product image for product ID: {ProductId}", id);
-                return StatusCode(500, new { message = "Internal server error" });
-            }
-        }
-
-        /// <summary>
-        /// Eliminar imagen de producto
+  /// Elimina la imagen de un producto
         /// </summary>
         [HttpDelete("{id}/image")]
-        [Authorize(Roles = "Administrator")]
-        public async Task<IActionResult> DeleteProductImage(int id, [FromQuery] string imageUrl)
+  [Authorize(Roles = "Administrator")]
+    public async Task<IActionResult> DeleteProductImage(int id)
+  {
+ try
+         {
+    var product = await _productService.GetByIdAsync(id);
+     if (product == null)
+            {
+         return NotFound(new { message = "Product not found" });
+  }
+
+         if (string.IsNullOrWhiteSpace(product.ImageUri))
+      {
+      return BadRequest(new { message = "Product has no image to delete" });
+          }
+
+     var result = await _imageService.DeleteImageByUrlAsync(product.ImageUri);
+
+             if (result)
         {
-            try
+     // Actualizar el producto para remover la ImageUri
+   var updateDto = new ProductUpdateDto
+           {
+  ProductId = id,
+    Code = product.Code,
+Name = product.Name,
+       Description = product.Description,
+            Price = product.Price,
+                Stock = product.Stock,
+                    IsActive = product.IsActive,
+ ImageUri = string.Empty
+         };
+
+    await _productService.UpdateAsync(updateDto);
+      return Ok(new { message = "Product image deleted successfully" });
+       }
+  else
+   {
+     return NotFound(new { message = "Image not found or could not be deleted" });
+                }
+  }
+          catch (Exception ex)
             {
-                // Verificar que el producto existe
-                var product = await _productService.GetByIdAsync(id);
-                if (product == null)
-                {
-                    return NotFound(new { message = "Product not found" });
-                }
-
-                if (string.IsNullOrWhiteSpace(imageUrl))
-                {
-                    return BadRequest(new { message = "Image URL is required" });
-                }
-
-                var result = await _imageService.DeleteImageByUrlAsync(imageUrl);
-
-                if (result)
-                {
-                    return Ok(new { message = "Product image deleted successfully" });
-                }
-                else
-                {
-                    return NotFound(new { message = "Image not found or could not be deleted" });
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error deleting product image for product ID: {ProductId}", id);
-                return StatusCode(500, new { message = "Internal server error" });
+              _logger.LogError(ex, "Error deleting product image for product ID: {ProductId}", id);
+        return StatusCode(500, new { message = "Internal server error" });
             }
         }
 
-        [HttpDelete("{id}")]
+        /// <summary>
+        /// Elimina un producto
+ /// </summary>
+ [HttpDelete("{id}")]
         [Authorize(Roles = "Administrator")]
-        public async Task<IActionResult> Delete(int id)
+    public async Task<IActionResult> Delete(int id)
         {
-            await _productService.DeleteAsync(id);
-            return NoContent();
-        }
+    try
+      {
+          // Obtener el producto antes de eliminarlo para gestionar la imagen
+       var product = await _productService.GetByIdAsync(id);
+                if (product != null && !string.IsNullOrWhiteSpace(product.ImageUri))
+   {
+        try
+   {
+         await _imageService.DeleteImageByUrlAsync(product.ImageUri);
+  _logger.LogInformation("Product image deleted: {ImageUrl}", product.ImageUri);
     }
+           catch (Exception ex)
+        {
+                _logger.LogWarning(ex, "Failed to delete product image: {ImageUrl}", product.ImageUri);
+     }
+     }
 
-    // DTO para crear producto con imagen
-    public class ProductCreateWithImageDto
+             await _productService.DeleteAsync(id);
+   return NoContent();
+    }
+       catch (Exception ex)
     {
-        public string Code { get; set; } = string.Empty;
-        public string Name { get; set; } = string.Empty;
-        public string? Description { get; set; }
-        public decimal Price { get; set; }
-        public int Stock { get; set; }
-        public IFormFile? Image { get; set; }
-    }
+       _logger.LogError(ex, "Error deleting product with ID: {ProductId}", id);
+       return StatusCode(500, new { message = "Internal server error" });
+            }
+        }
+  }
 }

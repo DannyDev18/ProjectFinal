@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -26,7 +26,7 @@ namespace Api
                 options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
             );
 
-            // PostgreSQL Database Context (preparado para futura migraci�n - comentado)
+            // PostgreSQL Database Context (preparado para futura migración - comentado)
             /*
             builder.Services.AddDbContext<ApplicationDBContext>(options =>
                 options.UseNpgsql(builder.Configuration.GetConnectionString("PostgreSQLConnection"),
@@ -47,14 +47,14 @@ namespace Api
                 options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(30);
                 options.Lockout.AllowedForNewUsers = true;
             })
-                
+
                 .AddEntityFrameworkStores<ApplicationDBContext>()
                 .AddDefaultTokenProviders()
                 .AddPasswordValidator<CustomPasswordValidator>();
 
             // JWT Configuration
             var jwtSettings = builder.Configuration.GetSection("Jwt");
-            var key = Encoding.UTF8.GetBytes(jwtSettings["Key"] ?? 
+            var key = Encoding.UTF8.GetBytes(jwtSettings["Key"] ??
                 "F2C7#9z8l8$4b6@e5!r2v7w1q3x6n4u3p0s9d7mZ8kL4nQ1tY6wE9rT2yU5iO0pA3sD6fG9hJ2kL5nM8bV1cX4zQ7w");
 
             builder.Services.AddAuthentication(options =>
@@ -76,18 +76,47 @@ namespace Api
                     ClockSkew = TimeSpan.Zero
                 };
             });
-            
+
+
             // Cloudinary Configuration
+            Console.WriteLine("☁️ Configurando Cloudinary...");
             builder.Services.Configure<CloudinarySettings>(builder.Configuration.GetSection("CloudinarySettings"));
+
             builder.Services.AddSingleton(sp =>
             {
-                var settings = builder.Configuration.GetSection("CloudinarySettings").Get<CloudinarySettings>();
-                if (settings == null)
-                    throw new InvalidOperationException("CloudinarySettings not found in configuration");
-   
-                return new Cloudinary(new Account(settings.CloudName, settings.ApiKey, settings.ApiSecret));
+                var configuration = sp.GetRequiredService<IConfiguration>();
+                var cloudinarySection = configuration.GetSection("CloudinarySettings");
+
+                var cloudName = cloudinarySection["CloudName"]?.Trim();
+                var apiKey = cloudinarySection["ApiKey"]?.Trim();
+                var apiSecret = cloudinarySection["ApiSecret"]?.Trim();
+
+                if (string.IsNullOrWhiteSpace(cloudName) ||
+                        string.IsNullOrWhiteSpace(apiKey) ||
+                    string.IsNullOrWhiteSpace(apiSecret))
+                {
+                    throw new InvalidOperationException("Configuración de Cloudinary incompleta en appsettings.json");
+                }
+
+                var account = new Account(cloudName, apiKey, apiSecret);
+                var cloudinary = new Cloudinary(account);
+
+                try
+                {
+                    var testResult = cloudinary.Api.Account;
+                    Console.WriteLine($"✅ Cloudinary configurado exitosamente - CloudName: {testResult.Cloud}");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"❌ Error al configurar Cloudinary: {ex.Message}");
+                    throw new InvalidOperationException($"Fallo en configuración de Cloudinary: {ex.Message}");
+                }
+
+                return cloudinary;
             });
-     
+
+
+
             // Dependency Injection - Clean Architecture
             builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
             builder.Services.AddScoped<IClientRepository, ClientRepository>();
@@ -104,10 +133,11 @@ namespace Api
             // Image Service - Cloudinary
             builder.Services.AddScoped<IImageService, ImageService>();
 
-            // Servicios para m�dulo de pagos - ACTIVADO
+            // Servicios para módulo de pagos - ACTIVADO
             builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
             builder.Services.AddScoped<IPaymentMethodRepository, PaymentMethodRepository>();
             builder.Services.AddScoped<IPaymentService, PaymentService>();
+            builder.Services.AddScoped<IPaymentMethodService, PaymentMethodService>();
 
             // Infrastructure Services
             builder.Services.AddScoped<PasswordHistoryService>();
@@ -119,9 +149,9 @@ namespace Api
             // Configure Swagger
             builder.Services.AddSwaggerGen(c =>
             {
-                c.SwaggerDoc("v1", new OpenApiInfo 
-                { 
-                    Title = "ProjectFinal API - E-commerce Complete", 
+                c.SwaggerDoc("v1", new OpenApiInfo
+                {
+                    Title = "ProjectFinal API - E-commerce Complete",
                     Version = "v1",
                     Description = "Clean Architecture API with Shopping Cart, Payment System & Image Upload - Ready for Mobile"
                 });

@@ -15,4 +15,8 @@
     <ProjectReference Include="..\Project.Domain\Project.Domain.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Dtos\Common\" />
+  </ItemGroup>
+
 </Project>

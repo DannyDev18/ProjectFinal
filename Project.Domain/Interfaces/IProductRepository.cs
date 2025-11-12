@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -19,5 +20,6 @@ namespace Project.Domain.Interfaces
         Task IncreaseStockAsync(int productId, int quantity);
         Task<bool> ExistsByCodeAsync(string code);
         Task<bool> ExistsByIdAsync(int productId);
+        Task<int> CountAsync(Expression<Func<Product, bool>> predicate = null);
     }
 }

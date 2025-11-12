@@ -11,20 +11,11 @@ namespace Project.Domain.Interfaces
         Task<IEnumerable<Payment>> GetPaymentsByUserAsync(string userId);
   Task<IEnumerable<Payment>> GetPaymentsByStatusAsync(PaymentStatus status);
        Task<IEnumerable<Payment>> GetPaymentsByDateRangeAsync(DateTime startDate, DateTime endDate);
-    Task<Payment> GetByTransactionIdAsync(string transactionId);
+    Task<Payment?> GetByTransactionIdAsync(string transactionId);
         Task<decimal> GetTotalPaymentsAsync(DateTime startDate, DateTime endDate);
    Task<IEnumerable<Payment>> GetFailedPaymentsAsync();
         Task<IEnumerable<Payment>> GetPendingPaymentsAsync();
         Task<bool> HasSuccessfulPaymentAsync(int invoiceId);
-    }
-
-    public interface IPaymentMethodRepository : IRepository<PaymentMethod>
-    {
-   Task<IEnumerable<PaymentMethod>> GetActivePaymentMethodsAsync();
-     Task<PaymentMethod> GetByIdAsync(string paymentMethodId);
-    Task<IEnumerable<PaymentMethod>> GetByTypeAsync(PaymentType type);
-        Task<bool> IsPaymentMethodActiveAsync(string paymentMethodId);
-  Task<IEnumerable<PaymentMethod>> GetOrderedPaymentMethodsAsync();
     }
 
     public interface IPaymentService

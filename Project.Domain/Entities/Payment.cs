@@ -1,134 +1,130 @@
 // MÓDULO DE PAGOS - PREPARADO PARA IMPLEMENTACIÓN FUTURA
 // Descomentar cuando sea necesario implementar sistema de pagos
 
+using System;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using Project.Domain.Entities;
 
 namespace Project.Domain.Entities
 {
     public class Payment
     {
+        [Key]
         public int PaymentId { get; set; }
-     public int InvoiceId { get; set; }
+        
+        [Required]
+        public int InvoiceId { get; set; }
+        
+        [Required]
+        [MaxLength(50)]
         public string PaymentMethodId { get; set; } = string.Empty;
-    public decimal Amount { get; set; }
+        
+        [Required]
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal Amount { get; set; }
+   
+        [Required]
+        [MaxLength(200)]
         public string TransactionId { get; set; } = string.Empty;
+        
+        [Required]
         public PaymentStatus Status { get; set; }
+     
         public DateTime PaymentDate { get; set; }
+        
         public DateTime? ProcessedAt { get; set; }
+    
+        [MaxLength(1000)]
         public string? ProcessorResponse { get; set; }
+        
+        [MaxLength(500)]
         public string? FailureReason { get; set; }
+        
+        public DateTime CreatedAt { get; set; }
+        
+        public DateTime? UpdatedAt { get; set; }
 
         // Navigation properties
+        [ForeignKey(nameof(InvoiceId))]
         public virtual Invoice Invoice { get; set; } = null!;
+        
+        [ForeignKey(nameof(PaymentMethodId))]
         public virtual PaymentMethod PaymentMethod { get; set; } = null!;
 
         public Payment()
-      {
-     PaymentDate = DateTime.UtcNow;
+        {
+            PaymentDate = DateTime.UtcNow;
+            CreatedAt = DateTime.UtcNow;
             Status = PaymentStatus.Pending;
         }
 
-      public Payment(int invoiceId, string paymentMethodId, decimal amount, string transactionId)
+        public Payment(int invoiceId, string paymentMethodId, decimal amount, string transactionId) : this()
         {
-  if (invoiceId <= 0)
-         throw new ArgumentException("Invoice ID must be greater than zero", nameof(invoiceId));
-  
-       if (string.IsNullOrWhiteSpace(paymentMethodId))
+            if (invoiceId <= 0)
+                throw new ArgumentException("Invoice ID must be greater than zero", nameof(invoiceId));
+
+            if (string.IsNullOrWhiteSpace(paymentMethodId))
                 throw new ArgumentException("Payment method ID is required", nameof(paymentMethodId));
        
             if (amount <= 0)
- throw new ArgumentException("Amount must be greater than zero", nameof(amount));
+                throw new ArgumentException("Amount must be greater than zero", nameof(amount));
         
-      if (string.IsNullOrWhiteSpace(transactionId))
-     throw new ArgumentException("Transaction ID is required", nameof(transactionId));
+            if (string.IsNullOrWhiteSpace(transactionId))
+                throw new ArgumentException("Transaction ID is required", nameof(transactionId));
 
-     InvoiceId = invoiceId;
-       PaymentMethodId = paymentMethodId;
-    Amount = amount;
+            InvoiceId = invoiceId;
+            PaymentMethodId = paymentMethodId;
+            Amount = amount;
             TransactionId = transactionId;
-     PaymentDate = DateTime.UtcNow;
-            Status = PaymentStatus.Pending;
         }
 
         public void MarkAsCompleted(string? processorResponse = null)
         {
-     Status = PaymentStatus.Completed;
-     ProcessedAt = DateTime.UtcNow;
-    ProcessorResponse = processorResponse;
-  FailureReason = null;
+            Status = PaymentStatus.Completed;
+            ProcessedAt = DateTime.UtcNow;
+            UpdatedAt = DateTime.UtcNow;
+            ProcessorResponse = processorResponse;
+            FailureReason = null;
         }
 
         public void MarkAsFailed(string failureReason)
-    {
-         Status = PaymentStatus.Failed;
-       ProcessedAt = DateTime.UtcNow;
-    FailureReason = failureReason;
-      }
-
-      public void MarkAsRefunded()
         {
-     Status = PaymentStatus.Refunded;
+            if (string.IsNullOrWhiteSpace(failureReason))
+                throw new ArgumentException("Failure reason is required", nameof(failureReason));
+
+            Status = PaymentStatus.Failed;
             ProcessedAt = DateTime.UtcNow;
-        }
-    }
-
-    public class PaymentMethod
-    {
-        public string PaymentMethodId { get; set; } = string.Empty;
-        public string Name { get; set; } = string.Empty;
-        public string Description { get; set; } = string.Empty;
-     public bool IsActive { get; set; }
-     public PaymentType Type { get; set; }
-      public string? ProcessorConfig { get; set; } // JSON config for payment processor
-        public decimal MinAmount { get; set; }
-        public decimal MaxAmount { get; set; }
-        public decimal ProcessingFee { get; set; }
-        public string? IconUrl { get; set; } // Para la UI móvil
-        public int DisplayOrder { get; set; } // Para ordenar en la UI
-
-    // Navigation properties
-        public virtual ICollection<Payment> Payments { get; set; } = new HashSet<Payment>();
-
-        public PaymentMethod()
-    {
-     IsActive = true;
+            UpdatedAt = DateTime.UtcNow;
+            FailureReason = failureReason;
         }
 
-        public PaymentMethod(string paymentMethodId, string name, PaymentType type)
+        public void MarkAsRefunded()
         {
-      if (string.IsNullOrWhiteSpace(paymentMethodId))
-          throw new ArgumentException("Payment method ID is required", nameof(paymentMethodId));
-            
-    if (string.IsNullOrWhiteSpace(name))
-           throw new ArgumentException("Name is required", nameof(name));
+            Status = PaymentStatus.Refunded;
+            ProcessedAt = DateTime.UtcNow;
+            UpdatedAt = DateTime.UtcNow;
+        }
 
-        PaymentMethodId = paymentMethodId;
-            Name = name;
-            Type = type;
-            IsActive = true;
-    }
-    }
+        public void MarkAsCancelled()
+        {
+            Status = PaymentStatus.Cancelled;
+            ProcessedAt = DateTime.UtcNow;
+            UpdatedAt = DateTime.UtcNow;
+        }
 
-    public enum PaymentStatus
-    {
-        Pending = 0,
-   Processing = 1,
-    Completed = 2,
-        Failed = 3,
-        Cancelled = 4,
-        Refunded = 5
-    }
+        public void StartProcessing()
+        {
+            if (Status != PaymentStatus.Pending)
+                throw new InvalidOperationException("Only pending payments can be processed");
 
-    public enum PaymentType
-    {
-        Cash = 0,   // Efectivo
-        CreditCard = 1,     // Tarjeta de Crédito
-        DebitCard = 2,      // Tarjeta de Débito
-        BankTransfer = 3,   // Transferencia Bancaria
-        PayPal = 4, // PayPal
-  Stripe = 5,   // Stripe
-        MobileMoney = 6,    // Dinero móvil
-        Cryptocurrency = 7, // Criptomonedas
-    GiftCard = 8        // Tarjeta de regalo
+            Status = PaymentStatus.Processing;
+            UpdatedAt = DateTime.UtcNow;
+        }
+
+        public bool IsCompleted => Status == PaymentStatus.Completed;
+        public bool IsFailed => Status == PaymentStatus.Failed;
+        public bool IsPending => Status == PaymentStatus.Pending;
+        public bool IsProcessing => Status == PaymentStatus.Processing;
     }
 }
